@@ -1,14 +1,30 @@
+
+
+
 Import-Module PSSQLite
 
 function initDB {
+    <#
+    .SYNOPSIS
+    Initialisation base de donnée SQLite avec schéma initial 
+    .DESCRIPTION
+    Crée le fichier de base de donnée SQLite, configure les tables 
+    initials et inscrit les données initiales de base pour requises 
+    pour les différents modules de NetLog-Arp
+    .PARAMETER databasepath
+    Chemin d'accès et nom du fichier de base de donnée
+    .EXAMPLE
+    PS > initdb()
+    .TODO
+    validation du chemin $databasePath
+    Si le fichier n'existe pas et il est possible d'écrire dans le 
+    dossier, continuer.  SQLite créer le fichier s'il n'existe pas à la première connexion
+    #>
+
     param(
         [String[]] $databasePath
         )
     
-    # TODO: validation du chemin $databasePath
-    # Si le fichier n'existe pas et il est possible d'écrire dans le 
-    # dossier, continuer.  SQLite créer le fichier s'il n'existe pas à la première connexion
-
     $nlaDB = New-SqliteConnection -DataSource $databasePath
     $error.clear()
     $null=Invoke-SqliteQuery -Connection $nladb -Query "pragma schema_version;" -ErrorAction SilentlyContinue
@@ -66,34 +82,21 @@ function initDB {
     #>
     $nlaCreateTable["CommentMAC"] = "
         CREATE TABLE CommentMAC ( rowid,  
-        addressID INTEGER, comment TEXT INT, date datetime );
+        addressID INTEGER, comment TEXT , date datetime );
     " 
 
     <# définition dbml
-        Table SeenMAC {
-            rowid integer [primary key]
-            address integer [ref: > AddressMAC.address]
-            segmentID integer [ref: > AddressMAC.segmentID]
-            date datetime
-        }        
+    Table Is {
+        rowid integer [primary key]
+        MACID integer [ref: > AddressMAC.rowid]
+        IPID integer [ref: > AddressIP.rowid ]
+        Seen datetime
+    }                
     #>
-    $nlaCreateTable["SeenMAC"] = "
-        CREATE TABLE SeenMAC ( rowid,  
-        address INTEGER, segmentID INT, date datetime );
-    " 
-    <# définition dbml
-        Table vendorMAC {
-            rowid inteter [primary key]
-            vendorPrefix TEXT
-            vendorName TEXT
-            private integer
-            lastupdate datetime
-        }        
-    #>
-    $nlaCreateTable["vendorMAC"] = "
-        CREATE TABLE vendorMAC ( rowid, 
-        vendorPrefix TEXT, vendorName TEXT, private BOOLEAN, lastupdate DATETIME );
+    $nlaCreateTable["T_Is"] = "
+        CREATE TABLE T_Is ( rowid, MacID INT, IpID INT, Seen datetime);
     "
+    
 
     <# définition dbml
         Table AddressIP {
@@ -135,8 +138,8 @@ function initDB {
     }        
     #>
     $nlaCreateTable["CommentIP"] = "
-        CREATE TABLE CommentIP ( rowid,  
-        addressID INTEGER, comment TEXT, 
+        CREATE TABLE CommentIP ( rowid,
+        addressID INTEGER, comment TEXT,
         date datetime );
     "
 
@@ -165,5 +168,5 @@ function initDB {
         
     }
 
-
+# Appel à retirer,  
 initDB(".\experiment\test.db")
