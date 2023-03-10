@@ -233,4 +233,4 @@ function initDB {
 
 # Appel à retirer,  
 #initDB(".\experiment\test.db")
-FichierDeConfiguration($null)
+#FichierDeConfiguration($null)
