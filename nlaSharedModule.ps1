@@ -168,5 +168,69 @@ function initDB {
         
     }
 
+    function FichierDeConfiguration {
+        <#
+        .SYNOPSIS
+        Retourne les paramètres du fichier de configuraiton, le cré au besoin 
+        .DESCRIPTION
+        Permet de retourner les valeurs du fichier de configuration.
+        Retourn $null si le fichier de configuration n'est pas un json conforme
+        Valide, propose des valeurs par défaut ou des valeurs null.
+        Il est possible que les données manquantes aient étés fournis par la ligne de commande
+        .PARAMETER configFilePath
+        Chemin d'accès et nom du fichier de configuration
+        .TODO
+        tbd
+        #>
+    
+        param(
+            [String[]] $configFilePath
+            )
+
+        # Initialisation de $nlaConfig
+        $nlaConfig = "" | select sqlitePath,interface
+        # Si la variable $configFulePath est vide, pointer sur le dossier courant du script
+        if ( -not $configFilePath ) { $configFilePath = $PSScriptRoot+"\nla.json" }
+
+        #Tentative de lecture du fichier de configuration
+        try {              
+            $nlaTempConfig = Get-Content -Raw -Path $configFilePath -ErrorAction Stop | 
+                ConvertFrom-Json |
+                Select-Object sqlitePath,interface
+            $nlaConfig.sqlitePath = (&{If($nlaTempConfig.sqlitePath) {$nlaTempConfig.sqlitePath} Else {""}})
+            $nlaConfig.interface = (&{If($nlaTempConfig.interface) {$nlaTempConfig.interface} Else {""}})
+        }
+        catch [System.ArgumentException] 
+            { Write-Output "Fichier JSON mal-formé" 
+              Return $null  }
+        catch [System.Management.Automation.ItemNotFoundException]
+            { Write-Output "Fichier de configuration n'existe pas"
+              Return $null  }
+        catch {  write-output $Error[-1].exception.GetType().fullname }
+        
+        # validation des paramètres de configuration
+        # Vérifier si le chemin d'accès au fichier de base de donnée est valide
+        
+        if (!( $nlaConfig.sqlitePath )) {
+            # sqlitePath n'est pas défini, utilisons la valeur par défaut
+            $nlaConfig.sqlitePath=$PSScriptRoot+"\nladb.db"
+        }
+
+        if ( $nlaConfig.sqlitePath -eq (split-path -Path $nlaConfig.sqlitePath -Leaf) ) { 
+            # Fichier de donné n'est pas un chemin complet, utilisons le dossier du script.
+            $nlaConfig.sqlitePath=$PSScriptRoot+"\"+$nlaConfig.sqlitePath         
+        }
+        
+        $interfaceValide = Get-NetAdapter -InterfaceAlias $nlaConfig.interface -ErrorAction SilentlyContinue
+        if ( !$interfaceValide ) {
+            # Interface n'est pas valide
+            Write-Output "L'interface défini dans le fichier de configuration n'est pas valide :  $($nlaConfig.interface)"
+            $nlaConfig.interface = ""
+        }
+
+        Return [pscustomobject]$nlaConfig
+    }
+
 # Appel à retirer,  
-initDB(".\experiment\test.db")
+#initDB(".\experiment\test.db")
+FichierDeConfiguration($null)
