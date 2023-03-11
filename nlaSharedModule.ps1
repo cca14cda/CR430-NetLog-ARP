@@ -184,11 +184,11 @@ function initDB {
         #>
     
         param(
-            [String[]] $configFilePath
-            )
+            [Parameter(Mandatory=$false)][String[]] $configFilePath
+        )
 
         # Initialisation de $nlaConfig
-        $nlaConfig = "" | select sqlitePath,interface
+        $nlaConfig = "" | select-object sqlitePath,interface
         # Si la variable $configFulePath est vide, pointer sur le dossier courant du script
         if ( -not $configFilePath ) { $configFilePath = $PSScriptRoot+"\nla.json" }
 
@@ -197,16 +197,19 @@ function initDB {
             $nlaTempConfig = Get-Content -Raw -Path $configFilePath -ErrorAction Stop | 
                 ConvertFrom-Json |
                 Select-Object sqlitePath,interface
-            $nlaConfig.sqlitePath = (&{If($nlaTempConfig.sqlitePath) {$nlaTempConfig.sqlitePath} Else {""}})
-            $nlaConfig.interface = (&{If($nlaTempConfig.interface) {$nlaTempConfig.interface} Else {""}})
+            $nlaConfig.sqlitePath = (&{If($nlaTempConfig.sqlitePath) {$nlaTempConfig.sqlitePath} Else {$null}})
+            $nlaConfig.interface = (&{If($nlaTempConfig.interface) {$nlaTempConfig.interface} Else {$null}})
         }
         catch [System.ArgumentException] 
-            { Write-Output "Fichier JSON mal-formé" 
+            { #Fichier JSON mal-formé
               Return $null  }
         catch [System.Management.Automation.ItemNotFoundException]
-            { Write-Output "Fichier de configuration n'existe pas"
+            { #Fichier de configuration n'existe pas
               Return $null  }
-        catch {  write-output $Error[-1].exception.GetType().fullname }
+        catch {  
+            # Ne devrait pas arriver, croisons nous les doigts
+            write-output $Error[-1].exception.GetType().fullname 
+        }
         
         # validation des paramètres de configuration
         # Vérifier si le chemin d'accès au fichier de base de donnée est valide
@@ -224,8 +227,8 @@ function initDB {
         $interfaceValide = Get-NetAdapter -InterfaceAlias $nlaConfig.interface -ErrorAction SilentlyContinue
         if ( !$interfaceValide ) {
             # Interface n'est pas valide
-            Write-Output "L'interface défini dans le fichier de configuration n'est pas valide :  $($nlaConfig.interface)"
-            $nlaConfig.interface = ""
+            Write-Host "L'interface défini dans le fichier de configuration n'est pas valide :  $($nlaConfig.interface)"
+            $nlaConfig.interface = $null
         }
 
         Return [pscustomobject]$nlaConfig
@@ -233,4 +236,4 @@ function initDB {
 
 # Appel à retirer,  
 #initDB(".\experiment\test.db")
-#FichierDeConfiguration($null)
+#FichierDeConfiguration("nladb.delete")
