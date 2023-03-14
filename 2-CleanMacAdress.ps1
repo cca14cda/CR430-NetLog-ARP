@@ -54,7 +54,7 @@
             if ($MacAddress -match $RegEx) {
 		return $MacAddress
 	} else {
-		return $false
+		return "null"
 	}
         
 
