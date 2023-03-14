@@ -37,6 +37,9 @@ write-host "Database : $Database"
 # Charge les fonctions de nlaSharedModule.ps1
 . .\nlaSharedModule.ps1
 
+# Charge la fonction Clean-MacAddress de lazywinadmin
+. .\Clean-MacAddress.ps1
+
 # Demande la liste des interfaces réseau
 if ($listInterface) {
     get-netAdapter -Physical | Select-Object @{Name="InterfaceName";Expression={$_.Name}},@{Name="InterfaceID";Expression={$_.InterfaceIndex}}
@@ -95,6 +98,16 @@ $nlaEffectiveConfig
 
 # Début de la capture des adresses MAC
 # Boucle principale
+
+while ($true) {
+    
+    # tache 1, récupérer les adresses MAC
+
+    # tache 2, connexion icmp sur le subnet
+
+    $nlaSubnet = 
+    $nlaPrefixLenght = (get-netipaddress -InterfaceAlias "Wi-Fi" -AddressFamily IPv4 | Select-Object PrefixLength)[0].PrefixLength
+}
 
 Get-NetIPAddress -InterfaceAlias $nlaEffectiveConfig.interface -AddressFamily IPv4 | Select-Object IPAddress, PrefixLength
 $resultat=$(Get-NetNeighbor -InterfaceAlias $nlaEffectiveConfig.interface  -State "Reachable" | Select-Object  IPAddress, LinkLayerAddress)

@@ -237,3 +237,64 @@ function initDB {
 # Appel à retirer,  
 #initDB(".\experiment\test.db")
 #FichierDeConfiguration("nladb.delete")
+
+function Ip2Int {
+    <#
+    .SYNOPSIS
+    Convertie une adresse IP en entier sans inverser les octets comme ce satané powershell fait nativement 
+    .DESCRIPTION
+    Convertie une adresse IP en entier dans un ordre qui permet de faire
+    des opérations mathématique.
+    .PARAMETER IPv4
+    Chaine de caractère représentant une adresse IP
+    .OUTPUTS
+    [INT] Entier représentant l'adresse IP
+    Retourn $null si l'adresse IP n'est pas valide
+    .TODO 
+    tbd
+    #>
+
+    param(
+        [String[]] $IPString
+    )
+
+    #Vérifier si l'adresse IP est valide
+    try {
+        $IPv4 = [IPAddress]::Parse($IPString)
+    }
+    catch {
+        Return $null
+    }
+
+    [array]$IPString=$IPv4.GetAddressBytes()
+    [array]::reverse($IPString)
+    [uint32]$IPInt = ([IPAddress]($IPString -join '.')).Address
+    return $IPInt
+}
+
+function Int2Ip {
+    <#
+    .SYNOPSIS
+    Convertie un nombre entier en adresse IP en entier sans inverser les octets comme 
+    ce satané powershell fait nativement 
+    .DESCRIPTION
+    Convertie un nombre entier représentant une adresse IP en chaine de caractère
+    .PARAMETER IPInt
+    Nombre entier représentant une adresse IP
+    .OUTPUTS
+    Chaine représentant l'adresse IP
+    Retourn $null si l'adresse IP n'est pas valide
+    .TODO 
+    tbd
+    #>
+
+    param(
+        [UInt32[]] $IPInt
+    )
+
+    #Vérifier si l'adresse IP est valide
+    #4294967295 représente 255.255.255.255
+    if ($IPInt -gt 4294967295 -or $IPInt -lt 0) { Return $null }
+    #Si j'utilise Parse, il inverse les octets comme un grand   
+    Return ([String]([IPAddress]::Parse($IPInt)).IPAddressToString)
+}
