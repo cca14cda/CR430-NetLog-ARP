@@ -298,3 +298,30 @@ function Int2Ip {
     #Si j'utilise Parse, il inverse les octets comme un grand   
     Return ([String]([IPAddress]::Parse($IPInt)).IPAddressToString)
 }
+
+function IPRangeMinMax {
+    <#
+    .SYNOPSIS
+    Retournes les valeurs min et max d'une plage d'adresse IP
+    .DESCRIPTION
+    
+    .PARAMETER subnet
+    Adresse IP contenu dans le sous-réseau.
+    .PARAMETER mask
+    Nombre de bit représentant le mask de sous-réseau
+    .OUTPUTS
+    Tableau contenant les valeurs min et max de la plage d'adresse IP
+    .TODO 
+    tbd
+    #>
+
+    param(
+        [ipaddress] $subnet,
+        [UInt32[]] $mask
+    )
+
+    #Vérifier si l'adresse IP est valide
+
+    #Calculer le subnet
+
+    #
