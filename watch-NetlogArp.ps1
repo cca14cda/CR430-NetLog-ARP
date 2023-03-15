@@ -111,3 +111,4 @@ while ($true) {
 
 Get-NetIPAddress -InterfaceAlias $nlaEffectiveConfig.interface -AddressFamily IPv4 | Select-Object IPAddress, PrefixLength
 $resultat=$(Get-NetNeighbor -InterfaceAlias $nlaEffectiveConfig.interface  -State "Reachable" | Select-Object  IPAddress, LinkLayerAddress)
+
