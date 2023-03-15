@@ -1,5 +1,50 @@
 ﻿function Clean-MacAddress {
 
+    <#
+    .SYNOPSIS
+        Function to cleanup a MACAddress string
+    .DESCRIPTION
+        Function to cleanup a MACAddress string
+        Modifié en se basant sur le travail de fleschutz ( https://github.com/fleschutz/PowerShell/blob/master/Scripts/check-mac-address.ps1 )
+        afin d'intégrer la fonctionnalité de vérification de la validité de l'adresse MAC
+    .PARAMETER MacAddress
+        Specifies the MacAddress
+    .PARAMETER Separator
+        Specifies the separator every two characters
+    .PARAMETER Uppercase
+        Specifies the output must be Uppercase
+    .PARAMETER Lowercase
+        Specifies the output must be LowerCase
+    .EXAMPLE
+        Clean-MacAddress -MacAddress '00:11:22:33:44:55'
+        001122334455
+    .EXAMPLE
+        Clean-MacAddress -MacAddress '00:11:22:dD:ee:FF' -Uppercase
+        001122DDEEFF
+    .EXAMPLE
+        Clean-MacAddress -MacAddress '00:11:22:dD:ee:FF' -Lowercase
+        001122ddeeff
+    .EXAMPLE
+        Clean-MacAddress -MacAddress '00:11:22:dD:ee:FF' -Lowercase -Separator '-'
+        00-11-22-dd-ee-ff
+    .EXAMPLE
+        Clean-MacAddress -MacAddress '00:11:22:dD:ee:FF' -Lowercase -Separator '.'
+        00.11.22.dd.ee.ff
+    .EXAMPLE
+        Clean-MacAddress -MacAddress '00:11:22:dD:ee:FF' -Lowercase -Separator :
+        00:11:22:dd:ee:ff
+    .OUTPUTS
+        System.String
+    .NOTES
+        Francois-Xavier Cat
+        lazywinadmin.com
+        @lazywinadmin
+    .Link
+        https://github.com/lazywinadmin/PowerShell
+#>
+
+
+
     [OutputType([String], ParameterSetName = "Upper")]
     [OutputType([String], ParameterSetName = "Lower")]
     [CmdletBinding(DefaultParameterSetName = 'Upper')]
