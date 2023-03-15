@@ -282,7 +282,7 @@ function Int2Ip {
     .PARAMETER IPInt
     Nombre entier représentant une adresse IP
     .OUTPUTS
-    Chaine représentant l'adresse IP
+    Chaine de caractère représentant l'adresse IP
     Retourn $null si l'adresse IP n'est pas valide
     .TODO 
     tbd
@@ -310,9 +310,8 @@ function IPRangeMinMax {
     .PARAMETER mask
     Nombre de bit représentant le mask de sous-réseau
     .OUTPUTS
-    Tableau contenant les valeurs min et max de la plage d'adresse IP
-    .TODO 
-    tbd
+    Tableau d'objet [IPAddr] contenant les valeurs min et max de la plage d'adresse IP
+    
     #>
 
     param(
@@ -338,4 +337,35 @@ function IPRangeMinMax {
 
 }
     
-IPRangeMinMax -Subnet 192.168.0.0 -mask 8
+function calculateSubnet {
+
+    <#
+    .SYNOPSIS
+    Retourne une adresse IP représentant le sous-réseau
+    .DESCRIPTION
+    
+    .PARAMETER IPString
+    Adresse IP contenu dans le sous-réseau au format chaine de caractère
+    .PARAMETER mask
+    Nombre de bit représentant le mask de sous-réseau
+    .OUTPUTS
+    Objet de type [IPAddress]
+    
+    #>
+
+    param (
+        [string[]] $IPString,
+        [uint32] $mask
+    )
+
+    try {
+        $IPv4 = [IPAddress]::Parse($subnet)
+    }
+    catch {
+        Return $null
+    }
+
+    if ($mask -gt 30) { return $null}
+    $bitmask = [CONVERT]::ToUInt32(("1" * $mask + "0" * (32-$mask)),2)
+    Return ( [ipaddress]::Parse((Ip2Int($IPv4)) -band $bitmask ))
+}
