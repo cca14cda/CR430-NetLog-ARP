@@ -316,12 +316,26 @@ function IPRangeMinMax {
     #>
 
     param(
-        [ipaddress] $subnet,
-        [UInt32[]] $mask
+        [String[]] $subnet,
+        [UInt32] $mask
     )
 
+    if ($mask -gt 30) { return $null}
+    $bitmask = [CONVERT]::ToUInt32(("1" * $mask + "0" * (32-$mask)),2)
+
     #Vérifier si l'adresse IP est valide
+    try {
+        $IPv4 = [IPAddress]::Parse($subnet)
+    }
+    catch {
+        Return $null
+    }
 
-    #Calculer le subnet
+    $IPMin = ( (Ip2Int($IPv4)) -band $bitmask ) + 1
+    $IPMax = ( $IPMin  + [Math]::Pow(2,(32-$mask)) -1 ) -2 
 
-    #
+    return [pscustomobject]@{IPMin=([ipaddress]::Parse($IPmin) );IPMax=([ipaddress]::Parse($IPmax) )}
+
+}
+    
+IPRangeMinMax -Subnet 192.168.0.0 -mask 8

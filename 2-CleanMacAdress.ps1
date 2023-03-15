@@ -1,6 +1,6 @@
 ﻿function Clean-MacAddress {
 
-[OutputType([String], ParameterSetName = "Upper")]
+    [OutputType([String], ParameterSetName = "Upper")]
     [OutputType([String], ParameterSetName = "Lower")]
     [CmdletBinding(DefaultParameterSetName = 'Upper')]
     param
@@ -45,17 +45,16 @@
             
         }
     }
-
-   
+  
 
     END {
         
         $RegEx = "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})|([0-9A-Fa-f]{2}){6}$"
-            if ($MacAddress -match $RegEx) {
-		return $MacAddress
-	} else {
-		return "null"
-	}
+        if ($MacAddress -match $RegEx) {
+		    return $MacAddress
+	    } else {
+		    return $null
+	    }
         
 
     }
