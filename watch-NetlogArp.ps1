@@ -25,11 +25,11 @@ param(
 if ($args) { Write-Output "Arguments non utilisés : $args" }
 
 # test seulement, à supprimer
-Write-Host "listInterface : $listInterface"
-Write-Host "InterfaceID : $InterfaceID"
-Write-Host "InterfaceName : $InterfaceName"
-write-host "ConfigFile : $ConfigFile"
-write-host "Database : $Database"
+#Write-Host "listInterface : $listInterface"
+#Write-Host "InterfaceID : $InterfaceID"
+#Write-Host "InterfaceName : $InterfaceName"
+#write-host "ConfigFile : $ConfigFile"
+#write-host "Database : $Database"
 
 # a effacer, pour test les parametres de ligne de commande
 # $ConfigFile=".\nladb.delete"
@@ -76,8 +76,9 @@ if ($InterfaceName) {
     if ( !$interfaceValide ) {
         # Interface n'est pas valide
         Write-Host "L'interface spécifié en ligne de commande n'est pas valide :  $InterfaceName"
-        Write-Host "Je tente de trouve une interface valide"
-        $nlaEffectiveConfig.interface = $null
+        
+        # Est-ce nécessaire ?
+        #$nlaEffectiveConfig.interface = $null
 
     } else {
         $nlaEffectiveConfig.interface = $InterfaceName
@@ -213,6 +214,7 @@ while ($true) {
     }
     #On attend un peu, sinon c'est trop rapide
     Start-Sleep -Seconds 5
+    
 } # boucle principale
 
 

@@ -1,4 +1,4 @@
 {
-	"banane": "camion",
+	"sqlitePath": "nladb.json",
 	"interface": "Wi-Fi"
 }

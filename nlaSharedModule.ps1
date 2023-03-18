@@ -1,6 +1,3 @@
-
-
-
 Import-Module PSSQLite
 
 function initDB {
@@ -13,8 +10,10 @@ function initDB {
     pour les différents modules de NetLog-Arp
     .PARAMETER databasepath
     Chemin d'accès et nom du fichier de base de donnée
+    .OUTPUTS
+    Retourne un objet de type SQLiteConnection
     .EXAMPLE
-    PS > initdb()
+        $dbcnx= initdb()
     .TODO
     validation du chemin $databasePath
     Si le fichier n'existe pas et il est possible d'écrire dans le 
@@ -115,19 +114,7 @@ function initDB {
         FirstSeen datetime, deleted BOOLEAN );
     "
 
-    <# définition dbml
-        Table SeenIP {
-            rowid integer [primary key]
-            address integer [ref: > AddressIP.address]
-            segment integer [ref: > AddressIP.segmentID]
-            date datetime
-        }        
-    #>
-    $nlaCreateTable["SeenIP"] = "
-        CREATE TABLE SeenIP ( address INTEGER, segment INT, date datetime );
-    "
-
-    <# définition dbml
+        <# définition dbml
     Table CommentIP {
         rowid integer [primary key]
         addressID integer [ref: > AddressIP.rowid]
@@ -174,7 +161,10 @@ function FichierDeConfiguration {
     Retourn $null si le fichier de configuration n'est pas un json conforme
     Valide, propose des valeurs par défaut ou des valeurs null.
     Il est possible que les données manquantes aient étés fournis par la ligne de commande
-    .PARAMETER configFilePath
+    .PARAMETER
+    configFilePath
+    .OUTPUTS
+    Tableau des paramètres de configuration
     Chemin d'accès et nom du fichier de configuration
     .TODO
     tbd
