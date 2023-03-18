@@ -29,8 +29,8 @@ function initDB {
     $error.clear()
     $null=Invoke-SqliteQuery -Connection $nladb -Query "pragma schema_version;" -ErrorAction SilentlyContinue
     if ($error.Count) { 
-        Write-Output "Erreur d'accès à la base de donnée"
-        Return $false
+        #Write-Output "Erreur d'accès à la base de donnée"
+        Return $null
     }
 
     #
@@ -51,7 +51,7 @@ function initDB {
         }
     #>
     $nlaCreateTable["Segment"] = "
-        CREATE TABLE Segment ( rowid, name TEXT, 
+        CREATE TABLE Segment ( name TEXT, 
         description TEXT, GW_IP INT, GW_MAC TEXT,
         protected BOOLEAN, deleted BOOLEAN );
     "
@@ -67,7 +67,7 @@ function initDB {
         }
     #>
     $nlaCreateTable["AddressMAC"] = "
-        CREATE TABLE AddressMAC ( rowid, segmentID INTEGER, 
+        CREATE TABLE AddressMAC ( segmentID INTEGER, 
         address TEXT, vendorPrefix TEXT, description TEXT, 
         FirstSeen datetime, deleted BOOLEAN );
     "
@@ -81,8 +81,7 @@ function initDB {
     }
     #>
     $nlaCreateTable["CommentMAC"] = "
-        CREATE TABLE CommentMAC ( rowid,  
-        addressID INTEGER, comment TEXT , date datetime );
+        CREATE TABLE CommentMAC ( addressID INTEGER, comment TEXT , date datetime );
     " 
 
     <# définition dbml
@@ -94,7 +93,7 @@ function initDB {
     }                
     #>
     $nlaCreateTable["T_Is"] = "
-        CREATE TABLE T_Is ( rowid, MacID INT, IpID INT, Seen datetime);
+        CREATE TABLE T_Is ( MacID INT, IpID INT, Seen datetime);
     "
     
 
@@ -111,8 +110,8 @@ function initDB {
         }
     #>
     $nlaCreateTable["AddressIP"] = "
-        CREATE TABLE AddressIP ( rowid, segmentID INTEGER,
-        address INTEGER, subnet INT, mask INT, description TEXT,
+        CREATE TABLE AddressIP (  segmentID INTEGER,
+        address UINT32, subnet INT, mask INT, description TEXT,
         FirstSeen datetime, deleted BOOLEAN );
     "
 
@@ -125,8 +124,7 @@ function initDB {
         }        
     #>
     $nlaCreateTable["SeenIP"] = "
-        CREATE TABLE SeenIP ( rowid, 
-        address INTEGER, segment INT, date datetime );
+        CREATE TABLE SeenIP ( address INTEGER, segment INT, date datetime );
     "
 
     <# définition dbml
@@ -138,7 +136,7 @@ function initDB {
     }        
     #>
     $nlaCreateTable["CommentIP"] = "
-        CREATE TABLE CommentIP ( rowid,
+        CREATE TABLE CommentIP ( 
         addressID INTEGER, comment TEXT,
         date datetime );
     "
@@ -163,80 +161,75 @@ function initDB {
         Invoke-SqliteQuery -SQLiteConnection $nlaDB -Query $nlaInsertQuery -ErrorAction SilentlyContinue
     }
 
-    $nlaDB.Close()
-    Return $True
+    Return $nlaDB
         
-    }
+}
 
-    function FichierDeConfiguration {
-        <#
-        .SYNOPSIS
-        Retourne les paramètres du fichier de configuraiton, le cré au besoin 
-        .DESCRIPTION
-        Permet de retourner les valeurs du fichier de configuration.
-        Retourn $null si le fichier de configuration n'est pas un json conforme
-        Valide, propose des valeurs par défaut ou des valeurs null.
-        Il est possible que les données manquantes aient étés fournis par la ligne de commande
-        .PARAMETER configFilePath
-        Chemin d'accès et nom du fichier de configuration
-        .TODO
-        tbd
-        #>
+function FichierDeConfiguration {
+    <#
+    .SYNOPSIS
+    Retourne les paramètres du fichier de configuraiton, le cré au besoin 
+    .DESCRIPTION
+    Permet de retourner les valeurs du fichier de configuration.
+    Retourn $null si le fichier de configuration n'est pas un json conforme
+    Valide, propose des valeurs par défaut ou des valeurs null.
+    Il est possible que les données manquantes aient étés fournis par la ligne de commande
+    .PARAMETER configFilePath
+    Chemin d'accès et nom du fichier de configuration
+    .TODO
+    tbd
+    #>
+
+    param(
+        [Parameter(Mandatory=$false)][String[]] $configFilePath
+    )
+
+    # Initialisation de $nlaConfig
+    $nlaConfig = "" | select-object sqlitePath,interface
+    # Si la variable $configFulePath est vide, pointer sur le dossier courant du script
+    if ( -not $configFilePath ) { $configFilePath = $PSScriptRoot+"\nla.json" }
+
+    #Tentative de lecture du fichier de configuration
+    try {              
+        $nlaTempConfig = Get-Content -Raw -Path $configFilePath -ErrorAction Stop | 
+            ConvertFrom-Json |
+            Select-Object sqlitePath,interface
+        $nlaConfig.sqlitePath = (&{If($nlaTempConfig.sqlitePath) {$nlaTempConfig.sqlitePath} Else {$null}})
+        $nlaConfig.interface = (&{If($nlaTempConfig.interface) {$nlaTempConfig.interface} Else {$null}})
+    }
+    catch [System.ArgumentException] 
+        { #Fichier JSON mal-formé
+            Return $null  }
+    catch [System.Management.Automation.ItemNotFoundException]
+        { #Fichier de configuration n'existe pas
+            Return $null  }
+    catch {  
+        # Ne devrait pas arriver, croisons nous les doigts
+        write-output $Error[-1].exception.GetType().fullname 
+    }
     
-        param(
-            [Parameter(Mandatory=$false)][String[]] $configFilePath
-        )
-
-        # Initialisation de $nlaConfig
-        $nlaConfig = "" | select-object sqlitePath,interface
-        # Si la variable $configFulePath est vide, pointer sur le dossier courant du script
-        if ( -not $configFilePath ) { $configFilePath = $PSScriptRoot+"\nla.json" }
-
-        #Tentative de lecture du fichier de configuration
-        try {              
-            $nlaTempConfig = Get-Content -Raw -Path $configFilePath -ErrorAction Stop | 
-                ConvertFrom-Json |
-                Select-Object sqlitePath,interface
-            $nlaConfig.sqlitePath = (&{If($nlaTempConfig.sqlitePath) {$nlaTempConfig.sqlitePath} Else {$null}})
-            $nlaConfig.interface = (&{If($nlaTempConfig.interface) {$nlaTempConfig.interface} Else {$null}})
-        }
-        catch [System.ArgumentException] 
-            { #Fichier JSON mal-formé
-              Return $null  }
-        catch [System.Management.Automation.ItemNotFoundException]
-            { #Fichier de configuration n'existe pas
-              Return $null  }
-        catch {  
-            # Ne devrait pas arriver, croisons nous les doigts
-            write-output $Error[-1].exception.GetType().fullname 
-        }
-        
-        # validation des paramètres de configuration
-        # Vérifier si le chemin d'accès au fichier de base de donnée est valide
-        
-        if (!( $nlaConfig.sqlitePath )) {
-            # sqlitePath n'est pas défini, utilisons la valeur par défaut
-            $nlaConfig.sqlitePath=$PSScriptRoot+"\nladb.db"
-        }
-
-        if ( $nlaConfig.sqlitePath -eq (split-path -Path $nlaConfig.sqlitePath -Leaf) ) { 
-            # Fichier de donné n'est pas un chemin complet, utilisons le dossier du script.
-            $nlaConfig.sqlitePath=$PSScriptRoot+"\"+$nlaConfig.sqlitePath         
-        }
-        
-        $interfaceValide = Get-NetAdapter -InterfaceAlias $nlaConfig.interface -ErrorAction SilentlyContinue
-        if ( !$interfaceValide ) {
-            # Interface n'est pas valide
-            Write-Host "L'interface défini dans le fichier de configuration n'est pas valide :  $($nlaConfig.interface)"
-            $nlaConfig.interface = $null
-        }
-
-        Return [pscustomobject]$nlaConfig
+    # validation des paramètres de configuration
+    # Vérifier si le chemin d'accès au fichier de base de donnée est valide
+    
+    if (!( $nlaConfig.sqlitePath )) {
+        # sqlitePath n'est pas défini, utilisons la valeur par défaut
+        $nlaConfig.sqlitePath=$PSScriptRoot+"\nladb.db"
     }
 
-# Appel à retirer,  
-#initDB(".\experiment\test.db")
-#FichierDeConfiguration("nladb.delete")
+    if ( $nlaConfig.sqlitePath -eq (split-path -Path $nlaConfig.sqlitePath -Leaf) ) { 
+        # Fichier de donné n'est pas un chemin complet, utilisons le dossier du script.
+        $nlaConfig.sqlitePath=$PSScriptRoot+"\"+$nlaConfig.sqlitePath         
+    }
+    
+    $interfaceValide = Get-NetAdapter -InterfaceAlias $nlaConfig.interface -ErrorAction SilentlyContinue
+    if ( !$interfaceValide ) {
+        # Interface n'est pas valide
+        Write-Host "L'interface défini dans le fichier de configuration n'est pas valide :  $($nlaConfig.interface)"
+        $nlaConfig.interface = $null
+    }
+
+    Return [pscustomobject]$nlaConfig
+}
 
 function Ip2Int {
     <#
@@ -359,7 +352,7 @@ function calculateSubnet {
     )
 
     try {
-        $IPv4 = [IPAddress]::Parse($subnet)
+        $IPv4 = [IPAddress]::Parse($IPString)
     }
     catch {
         Return $null
@@ -367,5 +360,113 @@ function calculateSubnet {
 
     if ($mask -gt 30) { return $null}
     $bitmask = [CONVERT]::ToUInt32(("1" * $mask + "0" * (32-$mask)),2)
-    Return ( [ipaddress]::Parse((Ip2Int($IPv4)) -band $bitmask ))
+    Return ( [ipaddress]::Parse((Ip2Int($IPv4)) -band $bitmask ) )
+}
+
+function Clean-MacAddress {
+
+    <#
+    .SYNOPSIS
+        Function to cleanup a MACAddress string
+    .DESCRIPTION
+        Function to cleanup a MACAddress string
+        Modifié en se basant sur le travail de fleschutz ( https://github.com/fleschutz/PowerShell/blob/master/Scripts/check-mac-address.ps1 )
+        afin d'intégrer la fonctionnalité de vérification de la validité de l'adresse MAC
+    .PARAMETER MacAddress
+        Specifies the MacAddress
+    .PARAMETER Separator
+        Specifies the separator every two characters
+    .PARAMETER Uppercase
+        Specifies the output must be Uppercase
+    .PARAMETER Lowercase
+        Specifies the output must be LowerCase
+    .EXAMPLE
+        Clean-MacAddress -MacAddress '00:11:22:33:44:55'
+        001122334455
+    .EXAMPLE
+        Clean-MacAddress -MacAddress '00:11:22:dD:ee:FF' -Uppercase
+        001122DDEEFF
+    .EXAMPLE
+        Clean-MacAddress -MacAddress '00:11:22:dD:ee:FF' -Lowercase
+        001122ddeeff
+    .EXAMPLE
+        Clean-MacAddress -MacAddress '00:11:22:dD:ee:FF' -Lowercase -Separator '-'
+        00-11-22-dd-ee-ff
+    .EXAMPLE
+        Clean-MacAddress -MacAddress '00:11:22:dD:ee:FF' -Lowercase -Separator '.'
+        00.11.22.dd.ee.ff
+    .EXAMPLE
+        Clean-MacAddress -MacAddress '00:11:22:dD:ee:FF' -Lowercase -Separator :
+        00:11:22:dd:ee:ff
+    .OUTPUTS
+        System.String
+    .NOTES
+        Francois-Xavier Cat
+        lazywinadmin.com
+        @lazywinadmin
+    .Link
+        https://github.com/lazywinadmin/PowerShell
+#>
+
+
+
+    [OutputType([String], ParameterSetName = "Upper")]
+    [OutputType([String], ParameterSetName = "Lower")]
+    [CmdletBinding(DefaultParameterSetName = 'Upper')]
+    param
+    (
+        [Parameter(ParameterSetName = 'Lower')]
+        [Parameter(ParameterSetName = 'Upper')]
+        [String]$MacAddress,
+
+        [Parameter(ParameterSetName = 'Lower')]
+        [Parameter(ParameterSetName = 'Upper')]
+        [ValidateSet(':', 'None', '.', "-")]
+        $Separator,
+
+        [Parameter(ParameterSetName = 'Upper')]
+        [Switch]$Uppercase,
+
+        [Parameter(ParameterSetName = 'Lower')]
+        [Switch]$Lowercase
+    )
+
+    BEGIN {
+        # Initial Cleanup
+        $MacAddress = $MacAddress -replace "-", "" #Replace Dash
+        $MacAddress = $MacAddress -replace ":", "" #Replace Colon
+        $MacAddress = $MacAddress -replace "/s", "" #Remove whitespace
+        $MacAddress = $MacAddress -replace " ", "" #Remove whitespace
+        $MacAddress = $MacAddress -replace "\.", "" #Remove dots
+        $MacAddress = $MacAddress.trim() #Remove space at the beginning
+        $MacAddress = $MacAddress.trimend() #Remove space at the end
+    }
+    PROCESS {
+        IF ($PSBoundParameters['Uppercase']) {
+            $MacAddress = $macaddress.toupper()
+        }
+        IF ($PSBoundParameters['Lowercase']) {
+            $MacAddress = $macaddress.tolower()
+        }
+        IF ($PSBoundParameters['Separator']) {
+            IF ($Separator -ne "None") {
+                $MacAddress = $MacAddress -replace '(..(?!$))', "`$1$Separator"
+            }
+            
+        }
+    }
+  
+
+    END {
+        
+        $RegEx = "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})|([0-9A-Fa-f]{2}){6}$"
+        if ($MacAddress -match $RegEx) {
+		    return $MacAddress
+	    } else {
+		    return $null
+	    }
+        
+
+    }
+    
 }
