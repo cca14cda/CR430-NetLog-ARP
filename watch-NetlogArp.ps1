@@ -123,6 +123,11 @@ while ($true) {
     $MacIpNeighbor=$(Get-NetNeighbor -InterfaceAlias $nlaEffectiveConfig.interface  -State "Reachable" | Select-Object  IPAddress, LinkLayerAddress)    
     if ($MacIpNeighbor.Count) {
         $dateObservation = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+        #J'ai besoin de forcer un commit pour l'écriture des données sur le disque
+        #$nlaDBConnexion.close()
+        #$nlaDBConnexion = initDB -databasePath $nlaEffectiveConfig.sqlitePath
+
         foreach ($MacIP in $MacIpNeighbor) {
                         
             $nlaQueryCheckMAC="SELECT rowid FROM AddressMAC
@@ -212,9 +217,12 @@ while ($true) {
             write-host "$noteMAC $noteIP $noteIS"
         }
     }
+
+
+
     #On attend un peu, sinon c'est trop rapide
     Start-Sleep -Seconds 5
-    
+
 } # boucle principale
 
 
